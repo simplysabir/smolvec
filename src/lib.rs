@@ -1,14 +1,22 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::mem::{self, MaybeUninit};
+use std::ptr;
+use std::ops::{Deref, DerefMut};
+use std::alloc::{self, Layout};
+use std::fmt;
+use std::hash::{Hash, Hasher};
+use std::iter::FromIterator;
+
+const INITIAL_CAPACITY: usize = 16;
+
+pub struct SmolVec<T> {
+    len: usize,
+    data: Data<T>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+enum Data<T> {
+    Inline(MaybeUninit<[T; INITIAL_CAPACITY]>),
+    Heap {
+        ptr: *mut T,
+        capacity: usize,
+    },
 }
