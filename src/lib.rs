@@ -2,10 +2,9 @@ use std::alloc::{self, Layout};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use std::mem::{self, MaybeUninit};
+use std::mem::MaybeUninit;
 use std::ops::{Deref, DerefMut};
 use std::ptr;
-
 const INLINE_CAPACITY: usize = 16;
 
 pub struct SmolVec<T> {
@@ -263,5 +262,69 @@ impl<T> FromIterator<T> for SmolVec<T> {
         let mut vec = SmolVec::new();
         vec.extend(iter);
         vec
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_push_pop() {
+        let mut vec = SmolVec::new();
+        for i in 0..20 {
+            vec.push(i);
+        }
+        assert_eq!(vec.len(), 20);
+        for i in (0..20).rev() {
+            assert_eq!(vec.pop(), Some(i));
+        }
+        assert_eq!(vec.pop(), None);
+    }
+
+    #[test]
+    fn test_inline_to_heap() {
+        let mut vec = SmolVec::new();
+        for i in 0..INLINE_CAPACITY {
+            vec.push(i);
+        }
+        assert!(matches!(vec.data, Data::Inline(_)));
+        vec.push(INLINE_CAPACITY);
+        assert!(matches!(vec.data, Data::Heap { .. }));
+    }
+
+    #[test]
+    fn test_clone() {
+        let mut vec = SmolVec::new();
+        vec.extend(0..10);
+        let clone = vec.clone();
+        assert_eq!(vec, clone);
+    }
+
+    #[test]
+    fn test_eq() {
+        let mut vec1 = SmolVec::new();
+        let mut vec2 = SmolVec::new();
+        vec1.extend(0..5);
+        vec2.extend(0..5);
+        assert_eq!(vec1, vec2);
+        vec1.push(5);
+        assert_ne!(vec1, vec2);
+    }
+
+    #[test]
+    fn test_ord() {
+        let mut vec1 = SmolVec::new();
+        let mut vec2 = SmolVec::new();
+        vec1.extend(0..5);
+        vec2.extend(0..6);
+        assert!(vec1 < vec2);
+    }
+
+    #[test]
+    fn test_from_iter() {
+        let vec: SmolVec<_> = (0..10).collect();
+        assert_eq!(vec.len(), 10);
+        assert_eq!(vec[5], 5);
     }
 }

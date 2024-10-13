@@ -1,6 +1,16 @@
 [package]
 name = "smolvec"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
+description = "A lightweight vector implementation with small-vector optimization for rust."
+license = "MIT"
+repository = "https://github.com/simplysabir/smolvec"
+keywords = ["vector", "data-structure", "optimization"]
+categories = ["data-structures"]
 
-[dependencies]
+[dev-dependencies]
+criterion = { version = "0.3", features = ["html_reports"] }
+
+[[bench]]
+name = "smolvec_bench"
+harness = false
