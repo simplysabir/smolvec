@@ -1,3 +1,8 @@
+//! A lightweight vector implementation with small-vector optimization.
+//!
+//! `SmallVec<T>` is a vector implementation that optimizes for the case of small vectors
+//! by storing small arrays inline and only heap allocating for larger arrays.
+
 use std::alloc::{self, Layout};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -5,8 +10,14 @@ use std::iter::FromIterator;
 use std::mem::MaybeUninit;
 use std::ops::{Deref, DerefMut};
 use std::ptr;
+
+/// The number of elements that can be stored inline.
 const INLINE_CAPACITY: usize = 16;
 
+/// A vector implementation with small-vector optimization.
+///
+/// `SmallVec<T>` stores up to `INLINE_CAPACITY` elements inline,
+/// and only allocates on the heap for larger numbers of elements.
 pub struct SmolVec<T> {
     len: usize,
     data: Data<T>,
@@ -18,6 +29,7 @@ enum Data<T> {
 }
 
 impl<T> SmolVec<T> {
+    /// Creates a new, empty `SmallVec<T>`.
     pub fn new() -> Self {
         SmolVec {
             len: 0,
@@ -25,6 +37,7 @@ impl<T> SmolVec<T> {
         }
     }
 
+    /// Creates a new `SmallVec<T>` with the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         if capacity <= INLINE_CAPACITY {
             Self::new()
@@ -38,6 +51,7 @@ impl<T> SmolVec<T> {
         }
     }
 
+    /// Appends an element to the back of the vector.
     pub fn push(&mut self, value: T) {
         if self.len == self.capacity() {
             self.grow();
@@ -49,6 +63,7 @@ impl<T> SmolVec<T> {
         self.len += 1;
     }
 
+    /// Removes the last element from the vector and returns it, or `None` if it is empty.
     pub fn pop(&mut self) -> Option<T> {
         if self.len == 0 {
             return None;
@@ -65,6 +80,7 @@ impl<T> SmolVec<T> {
         while self.pop().is_some() {}
     }
 
+    /// Returns the number of elements the vector can hold without reallocating.
     pub fn capacity(&self) -> usize {
         match &self.data {
             Data::Inline(_) => INLINE_CAPACITY,
@@ -72,10 +88,12 @@ impl<T> SmolVec<T> {
         }
     }
 
+    /// Returns the number of elements in the vector.
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Returns `true` if the vector contains no elements.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
@@ -130,7 +148,7 @@ impl<T> SmolVec<T> {
                 vec.push(ptr::read(self.as_ptr().add(i)));
             }
         }
-        
+
         // If SmolVec was using heap, deallocate the heap memory
         if let Data::Heap { ptr, capacity } = self.data {
             unsafe {
@@ -141,7 +159,6 @@ impl<T> SmolVec<T> {
 
         vec
     }
-
 }
 
 impl<T> Deref for SmolVec<T> {
@@ -218,7 +235,6 @@ impl<'a, T> IntoIterator for &'a mut SmolVec<T> {
         self.iter_mut()
     }
 }
-
 
 impl<T: Eq> Eq for SmolVec<T> {}
 
